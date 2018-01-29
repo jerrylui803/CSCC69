@@ -25,7 +25,7 @@ void set_addr_rw(unsigned long addr) {
 
 	unsigned int level;
 	pte_t *pte = lookup_address(addr, &level);
-
+	// setting bits for read and write
 	if (pte->pte &~ _PAGE_RW) pte->pte |= _PAGE_RW;
 
 }
@@ -35,7 +35,7 @@ void set_addr_ro(unsigned long addr) {
 
 	unsigned int level;
 	pte_t *pte = lookup_address(addr, &level);
-
+	//use bit operation to set read and write back
 	pte->pte = pte->pte &~_PAGE_RW;
 
 }
@@ -52,6 +52,7 @@ void set_addr_ro(unsigned long addr) {
 
 /* List structure - each intercepted syscall may have a list of monitored pids */
 struct pid_list {
+	// linked list
 	pid_t pid;
 	struct list_head list;
 };
@@ -94,7 +95,7 @@ spinlock_t calltable_lock = SPIN_LOCK_UNLOCKED;
  * Returns -ENOMEM if the operation is unsuccessful.
  */
 static int add_pid_sysc(pid_t pid, int sysc)
-{
+{	
 	struct pid_list *ple=(struct pid_list*)kmalloc(sizeof(struct pid_list), GFP_KERNEL);
 
 	if (!ple)
@@ -102,7 +103,7 @@ static int add_pid_sysc(pid_t pid, int sysc)
 
 	INIT_LIST_HEAD(&ple->list);
 	ple->pid=pid;
-
+	// add a new entry to the list of pid being monitored into pid_list
 	list_add(&ple->list, &(table[sysc].my_list));
 	table[sysc].listcount++;
 
@@ -366,7 +367,7 @@ long (*orig_custom_syscall)(void);
  */
 static int init_function(void) {
 
-
+	printk(Kernel_ALERT "Hello World\n")
 
 
 
