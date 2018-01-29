@@ -5,11 +5,11 @@ MODULE_DESCRIPTION("My kernel module");
 MODULE_AUTHOR("John Doe");
 MODULE_LICENSE("GPL");
 static int mymodule_init(void) {
-	printk( KERN_DEBUG "Hello world!\n" );
+	printk( KERN_ALERT "Hello world!\n" );
 	return 0;
 }
 static void mymodule_exit(void) {
-	printk( KERN_DEBUG "I'm outta here\n" );
+	printk( KERN_ALERT "I'm outta here\n" );
 }
 module_init(mymodule_init);
 module_exit(mymodule_exit);
