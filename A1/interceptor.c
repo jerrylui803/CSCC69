@@ -23,7 +23,7 @@ extern void* sys_call_table[];
 /* The sys_call_table is read-only => must make it RW before replacing a syscall */
 void set_addr_rw(unsigned long addr) {
 
-	unsigned int level;
+	unsigned int level;	
 	pte_t *pte = lookup_address(addr, &level);
 	// setting bits for read and write
 	if (pte->pte &~ _PAGE_RW) pte->pte |= _PAGE_RW;
@@ -389,7 +389,7 @@ static int init_function(void) {
 static void exit_function(void)
 {        
 
-
+	printk( KERN_ALERT "I'm outta here\n" );
 
 
 
