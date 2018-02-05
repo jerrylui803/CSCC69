@@ -367,7 +367,7 @@ long (*orig_custom_syscall)(void);
  */
 static int init_function(void) {
 
-	printk(Kernel_ALERT "Hello World\n")
+	printk(Kernel_ALERT "Hello World\n");
 
 
 
