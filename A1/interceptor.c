@@ -366,7 +366,7 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 
 	// check if the syscall is valid, and is not my_syscall itself (> 0), 
 	// technically the last comparison is not needed, since its just macro for 0
-	if (syscall >= 0 && syscall <= NR_syscalls && syscall != MY_CUSTOM_SYSCALL){
+	if !(syscall >= 0 && syscall <= NR_syscalls && syscall != MY_CUSTOM_SYSCALL){
 		return EINVAL;
 	}
 	// start checking cmd
