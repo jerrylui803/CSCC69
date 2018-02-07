@@ -238,8 +238,6 @@ static int check_pid_monitored(int sysc, pid_t pid) {
 void intercept_single_sys(int sysc_num, long (*f)(struct pt_regs)){
 	set_addr_rw();
 	sys_call_table[sysc_num] = f
-
-
 }
 */
 
@@ -466,13 +464,6 @@ static int init_function(void) {
 		INIT_LIST_HEAD(&(table[i].my_list));
 		table[i].f = sys_call_table[i];
 	}
-	
-	printk(KERN_ALERT "Hello World\n");
-
-
-
-
-
 	return 0;
 }
 
@@ -488,14 +479,21 @@ static int init_function(void) {
  */
 static void exit_function(void)
 {        
+	// lock before exchanging customSysCall and customExitCall
+	spin_lock(&calltable_lock);
 
-	printk( KERN_ALERT "I'm outta here\n" );
+	// synchronization
+	set_addr_rw((unsigned long)sys_call_table)
+	//restore original syscall.
+	sys_call_table[MY_CUSTOM_SYSCALL] = orig_custom_syscall;
+	sys_call_table[__NR_exit_group] = orig_exit_group;
 
-
-
+	// synchronization. 
+	set_addr_ro((unsigned long)sys_call_table)
+	// unlock after exchange syscall.
+	spin_unlock(&calltable_lock);
 
 }
 
 module_init(init_function);
 module_exit(exit_function);
-
