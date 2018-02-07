@@ -373,7 +373,7 @@ static int init_function(void) {
 	// copy all system call from system call pointers table (array) to a local copy (my_table) 
 	int i;
 	for (i = 0; i < NR_syscalls; i++){
-		(table[i])->f = sys_call_table[i];
+		(table[i]).f = sys_call_table[i];
 	}
 	
 	printk(KERN_ALERT "Hello World\n");
