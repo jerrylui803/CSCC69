@@ -95,16 +95,18 @@ spinlock_t calltable_lock = SPIN_LOCK_UNLOCKED;
  * Returns -ENOMEM if the operation is unsuccessful.
  */
 static int add_pid_sysc(pid_t pid, int sysc)
-{	
+{	// allocate the memory for a single node in the link list; GFP_KERNEL means if no memory available then go to sleep
 	struct pid_list *ple=(struct pid_list*)kmalloc(sizeof(struct pid_list), GFP_KERNEL);
 
 	if (!ple)
+		// error code for out of memory
 		return -ENOMEM;
 
 	INIT_LIST_HEAD(&ple->list);
 	ple->pid=pid;
 	// add a new entry to the list of pid being monitored into pid_list
 	list_add(&ple->list, &(table[sysc].my_list));
+	// each index of table contains a linked list of pids, each index of table represent one system call
 	table[sysc].listcount++;
 
 	return 0;
@@ -118,7 +120,7 @@ static int del_pid_sysc(pid_t pid, int sysc)
 {
 	struct list_head *i;
 	struct pid_list *ple;
-
+	// iterate through all pid in the linked list associate with system call 'sysc'
 	list_for_each(i, &(table[sysc].my_list)) {
 
 		ple=list_entry(i, struct pid_list, list);
@@ -137,7 +139,8 @@ static int del_pid_sysc(pid_t pid, int sysc)
 			return 0;
 		}
 	}
-
+	// it should've return 0 in the loop.
+	// if it did not find the pid associated with sysc, then invalid argument
 	return -EINVAL;
 }
 
@@ -150,7 +153,7 @@ static int del_pid(pid_t pid)
 	struct list_head *i, *n;
 	struct pid_list *ple;
 	int ispid = 0, s = 0;
-
+	// similar to del_pid_sysc, except that it looks for pid in all sysc
 	for(s = 1; s < NR_syscalls; s++) {
 
 		list_for_each_safe(i, n, &(table[s].my_list)) {
@@ -367,6 +370,12 @@ long (*orig_custom_syscall)(void);
  */
 static int init_function(void) {
 
+	// copy all system call from system call pointers table (array) to a local copy (my_table) 
+	int i;
+	for (i = 0; i < NR_syscalls; i++){
+		//table[i] sys_call_table[i]
+	}
+	
 	printk(KERN_ALERT "Hello World\n");
 
 
