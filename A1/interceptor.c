@@ -268,7 +268,10 @@ void (*orig_exit_group)(int);
  */
 void my_exit_group(int status)
 {
-
+	spin_lock(&pidlist_lock);
+	del_pid(current->pid);
+	spin_unlock(&pidlist_lock);
+	(*orig_exit_group)(status); //not forget to call the original exit_group
 
 
 
@@ -295,11 +298,24 @@ void my_exit_group(int status)
  */
 asmlinkage long interceptor(struct pt_regs reg) {
 
-
-
-
-
-	return 0; // Just a placeholder, so it compiles with no warnings!
+	int this_syscall;
+	this_syscall = table[reg.ax].f(reg);
+	spin_lock(&calltable_lock);
+	spin_lock(&pidlist_lock);
+	//Check first to see if the syscall is being monitored for the current->pid
+	if ((table[reg.ax]).intercepted == 1){
+		//if monitored=2, log message. or if monitored=1 then we check pid monitored or not. if yes then we log message
+		if((table[reg.ax].monitored == 1)&&((check_pid_monitored(reg.ax, current->pid) == 1)||(table[reg.ax].monitored == 2))){
+			log_message(current->pid, reg.ax, reg.bx, reg.cx, reg.dx, reg.si, reg.di, reg.bp);
+		}
+		else{//pid not monitored
+		}
+	}
+	else{//status not intercepted
+	}
+	spin_unlock(&pidlist_lock);
+	spin_unlock(&calltable_lock);
+	return this_syscall; // call the original system call
 }
 
 /**
