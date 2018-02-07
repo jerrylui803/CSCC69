@@ -363,12 +363,13 @@ asmlinkage long interceptor(struct pt_regs reg) {
  */
 asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 
-	return 0;
+	printk( KERN_ALERT "test------------     %d      -----     %d ---------  %d  \n", cmd, syscall, pid );
 	// check if the syscall is valid, and is not my_syscall itself (> 0), 
 	// technically the last comparison is not needed, since its just macro for 0
 	if (!(syscall >= 0 && syscall <= NR_syscalls && syscall != MY_CUSTOM_SYSCALL)){
 		return EINVAL;
 	}
+	return 0;
 	// start checking cmd
 	if (cmd == REQUEST_SYSCALL_INTERCEPT || cmd == REQUEST_SYSCALL_RELEASE){
 		// writing else if inside does not make it more effentient, since it always return within each "if"
