@@ -233,6 +233,19 @@ static int check_pid_monitored(int sysc, pid_t pid) {
 }
 //----------------------------------------------------------------
 
+//-------------------------my own helpers-------------------------
+/*
+void intercept_single_sys(int sysc_num, long (*f)(struct pt_regs)){
+	set_addr_rw();
+	sys_call_table[sysc_num] = f
+
+
+}
+*/
+
+
+
+
 //----- Intercepting exit_group ----------------------------------
 /**
  * Since a process can exit without its owner specifically requesting
@@ -255,6 +268,7 @@ void (*orig_exit_group)(int);
  */
 void my_exit_group(int status)
 {
+
 
 
 
@@ -305,10 +319,10 @@ asmlinkage long interceptor(struct pt_regs reg) {
  *      and it must be an existing pid (except for the case when it's 0, indicating that we want 
  *      to start/stop monitoring for "all pids"). 
  *      If a pid belongs to a valid process, then the following expression is non-NULL:
- *           pid_task(find_vpid(pid), PIDTYPE_PID)
+ *           pid_task(find_vpid(pid), PIDTYPE_PID)------------------------------------------------------
  * - Check that the caller has the right permissions (-EPERM)
  *      For the first two commands, we must be root (see the current_uid() macro).
- *      For the last two commands, the following logic applies:
+ *      For the last two commands, the following logic applies:----------------------------------------
  *        - is the calling process root? if so, all is good, no doubts about permissions.
  *        - if not, then check if the 'pid' requested is owned by the calling process 
  *        - also, if 'pid' is 0 and the calling process is not root, then access is denied 
@@ -338,10 +352,56 @@ asmlinkage long interceptor(struct pt_regs reg) {
  *   you might be holding, before you exit the function (including error cases!).  
  */
 asmlinkage long my_syscall(int cmd, int syscall, int pid) {
+	int valid_pid = 1;
+
+	// check if the syscall is valid, and is not my_syscall itself (> 0), 
+	// technically the last comparison is not needed, since its just macro for 0
+	if (syscall >= 0 && syscall <= NR_syscalls && syscall != MY_CUSTOM_SYSCALL){
+		return EINVAL;
+	}
+
+	
+	
 
 
 
 
+
+
+
+	// start checking cmd
+	if (cmd == REQUEST_SYSCALL_INTERCEPT || cmd == REQUEST_SYSCALL_RELEASE){
+		// if we are root and (call process isnt parent of the intercepte process or we try to monitor all process)
+		if (current_uid() != 0 && (check_pid_from_list(current->pid, pid) != 0 || pid == 0)){
+			return EPERM;
+		}
+
+
+
+
+
+
+	}else if (cmd == REQUEST_START_MONITORING || cmd == REQUEST_STOP_MONITORING){
+
+
+		// the pid must be valid for the last two commands. It cannot be a negative integer, 
+		// and it must be an existing pid (except for the case when it's 0, indicating that we want 
+		// to start/stop monitoring for "all pids"). 
+		if ((pid_task(find_vpid(pid), PIDTYPE_PID) == NULL) && pid != 0){ 
+			valid_pid = 0;
+		}
+
+		if (current_uid() != 0){
+			return EPERM;
+			if ()
+		}
+
+
+
+
+	}else{
+		printk(KERN_ALERT "fking fail!!!!!!!!!!!!!!!!!!!!!!! \n");// -EINVAL
+	}
 
 
 	return 0;
