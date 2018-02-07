@@ -422,11 +422,11 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 
 		if (cmd == REQUEST_START_MONITORING) {
 			// check if it was already being monitored
-			if (check_pid_monitored(sysc, pid) == 1){
+			if (check_pid_monitored(syscall, pid) == 1){
 				return EBUSY;
 			}
 			// try add the new pid, if enough memory is available
-			if (add_pid_sysc(pid, sysc) == ENOMEM){
+			if (add_pid_sysc(pid, syscall) == ENOMEM){
 				return ENOMEM;
 			}
 		}
@@ -437,7 +437,7 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 				return EINVAL;
 			}
 			// try delete from list of monitored pids if it exists
-			if (del_pid_sysc(pid, sysc) == EINVAL) {
+			if (del_pid_sysc(pid, syscall) == EINVAL) {
 				return EINVAL;
 			}
 
