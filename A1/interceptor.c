@@ -370,11 +370,12 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 		printk( KERN_ALERT "FAIL     \n" );
 		return -EINVAL;
 	}
-	return 0;
+
 	// start checking cmd
 	if (cmd == REQUEST_SYSCALL_INTERCEPT || cmd == REQUEST_SYSCALL_RELEASE){
 		// writing else if inside does not make it more effentient, since it always return within each "if"
 		// if we are root and (call process isnt parent of the intercepte process or we try to monitor all process)
+		return 0;
 		if (current_uid() != 0 && (check_pid_from_list(current->pid, pid) != 0 || pid == 0)){
 			return -EPERM;
 		}
