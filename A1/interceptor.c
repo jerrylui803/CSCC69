@@ -368,7 +368,7 @@ asmlinkage long interceptor(struct pt_regs reg) {
  *   you might be holding, before you exit the function (including error cases!).  
  */
 asmlinkage long my_syscall(int cmd, int syscall, int pid) {
-	int valid_pid = 1;
+
 
 	// check if the syscall is valid, and is not my_syscall itself (> 0), 
 	// technically the last comparison is not needed, since its just macro for 0
@@ -404,12 +404,10 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 		// and it must be an existing pid (except for the case when it's 0, indicating that we want 
 		// to start/stop monitoring for "all pids"). 
 		if ((pid_task(find_vpid(pid), PIDTYPE_PID) == NULL) && pid != 0){ 
-			valid_pid = 0;
+			return EINVAL;
 		}
-
 		if (current_uid() != 0){
 			return EPERM;
-			if ()
 		}
 
 
@@ -445,11 +443,28 @@ long (*orig_custom_syscall)(void);
  * - Ensure synchronization as needed.
  */
 static int init_function(void) {
+	// lock before exchanging customSysCall and customExitCall
+	spin_lock(&calltable_lock);
+
+	orig_custom_syscall = sys_call_table[MY_CUSTOM_SYSCALL];
+	orig_exit_group = sys_call_table[__NR_exit_group];
+
+	// change premission to hijack
+	set_addr_rw(sys_call_table);
+	sys_call_table[MY_CUSTOM_SYSCALL] = &my_syscall;
+	sys_call_table[__NR_exit_group] = &my_exit_group;
+	set_addr_ro(sys_call_table)
+	spin_unlock(&calltable_lock);
+
 
 	// copy all system call from system call pointers table (array) to a local copy (my_table) 
 	int i;
-	for (i = 0; i < NR_syscalls; i++){
-		(table[i]).f = sys_call_table[i];
+	for (i = 0; i < NR_syscalls + 1; i++){
+		table[i].intercepted = 0;
+		table[i].monitored = 0;
+		table[i].listcount = 0;
+		INIT_LIST_HEAD(&(table[i].my_list));
+		table[i].f = sys_call_table[i];
 	}
 	
 	printk(KERN_ALERT "Hello World\n");
