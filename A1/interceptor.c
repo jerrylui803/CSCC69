@@ -368,7 +368,7 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 	// technically the last comparison is not needed, since its just macro for 0
 	if (!(syscall >= 0 && syscall <= NR_syscalls && syscall != MY_CUSTOM_SYSCALL)){
 		printk( KERN_ALERT "FAIL     \n" );
-		return EINVAL;
+		return -EINVAL;
 	}
 	return 0;
 	// start checking cmd
@@ -376,12 +376,12 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 		// writing else if inside does not make it more effentient, since it always return within each "if"
 		// if we are root and (call process isnt parent of the intercepte process or we try to monitor all process)
 		if (current_uid() != 0 && (check_pid_from_list(current->pid, pid) != 0 || pid == 0)){
-			return EPERM;
+			return -EPERM;
 		}
 		if (cmd == REQUEST_SYSCALL_INTERCEPT){
 
 			if (table[syscall].intercepted == 1){
-				return EBUSY;
+				return -EBUSY;
 			}
 
 			spin_lock(&calltable_lock);
@@ -397,7 +397,7 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 		}else if(cmd == REQUEST_SYSCALL_RELEASE){      // else is sufficient, leave it like this for now , fix after-------------------------
 			
 			if (table[syscall].intercepted != 1){
-				return EINVAL;
+				return -EINVAL;
 			}
 			spin_lock(&calltable_lock);
 			spin_lock(&pidlist_lock);
@@ -415,32 +415,32 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 		// and it must be an existing pid (except for the case when it's 0, indicating that we want 
 		// to start/stop monitoring for "all pids"). 
 		if ((pid_task(find_vpid(pid), PIDTYPE_PID) == NULL) && pid != 0) { 
-			return EINVAL;
+			return -EINVAL;
 		}
 		if (current_uid() != 0){
-			return EPERM;
+			return -EPERM;
 		}
 		// --------------------------------general checking ends---------------------------
 
 		if (cmd == REQUEST_START_MONITORING) {
 			// check if it was already being monitored
 			if (check_pid_monitored(syscall, pid) == 1){
-				return EBUSY;
+				return -EBUSY;
 			}
 			// try add the new pid, if enough memory is available
-			if (add_pid_sysc(pid, syscall) == ENOMEM){
-				return ENOMEM;
+			if (add_pid_sysc(pid, syscall) == -ENOMEM){
+				return -ENOMEM;
 			}
 		}
 
 		else if (cmd == REQUEST_STOP_MONITORING){
 			// check if the system call is intercepted first
 			if (table[syscall].intercepted != 1) {
-				return EINVAL;
+				return -EINVAL;
 			}
 			// try delete from list of monitored pids if it exists
-			if (del_pid_sysc(pid, syscall) == EINVAL) {
-				return EINVAL;
+			if (del_pid_sysc(pid, syscall) == -EINVAL) {
+				return -EINVAL;
 			}
 
 		}
