@@ -370,6 +370,7 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 		printk( KERN_ALERT "FAIL     \n" );
 		return -EINVAL;
 	}
+	return 0;
 	// start checking cmd
 	if (cmd == REQUEST_SYSCALL_INTERCEPT || cmd == REQUEST_SYSCALL_RELEASE){
 		// writing else if inside does not make it more effentient, since it always return within each "if"
