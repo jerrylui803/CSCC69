@@ -374,9 +374,9 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 	// start checking cmd
 	if (cmd == REQUEST_SYSCALL_INTERCEPT || cmd == REQUEST_SYSCALL_RELEASE){
 		// writing else if inside does not make it more effentient, since it always return within each "if"
-		// if we are root and (call process isnt parent of the intercepte process or we try to monitor all process)
-		return 0;
-		if (current_uid() != 0 && (check_pid_from_list(current->pid, pid) != 0 || pid == 0)){
+		
+		//return 0;
+		if (current_uid() != 0){
 			return -EPERM;
 		}
 		if (cmd == REQUEST_SYSCALL_INTERCEPT){
@@ -387,9 +387,12 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 
 			spin_lock(&calltable_lock);
 			spin_lock(&pidlist_lock);
+			set_addr_rw((unsigned long)sys_call_table);
 			// replace the default syscall from syscalltable to our interceptor function
 			sys_call_table[syscall] = &interceptor;
+			set_addr_ro((unsigned long)sys_call_table);
 			// change mytable's properties to reflect this change
+		
 			table[syscall].intercepted = 1;
 			spin_unlock(&calltable_lock);
 			spin_unlock(&pidlist_lock);
@@ -402,6 +405,7 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 			}
 			spin_lock(&calltable_lock);
 			spin_lock(&pidlist_lock);
+			set_addr_rw((unsigned long)sys_call_table);
 			// replace the default syscall from syscalltable to our interceptor function
 			sys_call_table[syscall] = table[syscall].f;
 			// change mytable's properties to reflect this change
@@ -418,7 +422,8 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 		if ((pid_task(find_vpid(pid), PIDTYPE_PID) == NULL) && pid != 0) { 
 			return -EINVAL;
 		}
-		if (current_uid() != 0){
+		// if it is not the case that (we are root and (call process isnt parent of the intercepte process or we try to monitor all process))
+		if (current_uid() != 0 && (check_pid_from_list(current->pid, pid) != 0 || pid == 0)){
 			return -EPERM;
 		}
 		// --------------------------------general checking ends---------------------------
@@ -481,10 +486,10 @@ static int init_function(void) {
 	orig_exit_group = sys_call_table[__NR_exit_group];
 
 	// change premission to hijack
-	set_addr_rw(sys_call_table);
+	set_addr_rw((unsigned long)sys_call_table);
 	sys_call_table[MY_CUSTOM_SYSCALL] = &my_syscall;
 	sys_call_table[__NR_exit_group] = &my_exit_group;
-	set_addr_ro(sys_call_table);
+	set_addr_ro((unsigned long)sys_call_table);
 	spin_unlock(&calltable_lock);
 
 
