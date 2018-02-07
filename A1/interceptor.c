@@ -297,6 +297,7 @@ void my_exit_group(int status)
 asmlinkage long interceptor(struct pt_regs reg) {
 
 	int this_syscall;
+	// call the original system call
 	this_syscall = table[reg.ax].f(reg);
 	spin_lock(&calltable_lock);
 	spin_lock(&pidlist_lock);
@@ -342,7 +343,7 @@ asmlinkage long interceptor(struct pt_regs reg) {
  *        - also, if 'pid' is 0 and the calling process is not root, then access is denied 
  *          (monitoring all pids is allowed only for root, obviously).
  *      To determine if two pids have the same owner, use the helper function provided above in this file.
- * - Check for correct context of commands (-EINVAL):
+ * - Check for correct context of commands (-EINVAL):---------------------------------------------
  *     a) Cannot de-intercept a system call that has not been intercepted yet.
  *     b) Cannot stop monitoring for a pid that is not being monitored, or if the 
  *        system call has not been intercepted yet.
@@ -373,47 +374,81 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 	if (syscall >= 0 && syscall <= NR_syscalls && syscall != MY_CUSTOM_SYSCALL){
 		return EINVAL;
 	}
-
-	
-	
-
-
-
-
-
-
-
 	// start checking cmd
 	if (cmd == REQUEST_SYSCALL_INTERCEPT || cmd == REQUEST_SYSCALL_RELEASE){
+		// writing else if inside does not make it more effentient, since it always return within each "if"
 		// if we are root and (call process isnt parent of the intercepte process or we try to monitor all process)
 		if (current_uid() != 0 && (check_pid_from_list(current->pid, pid) != 0 || pid == 0)){
 			return EPERM;
 		}
+		if (cmd == REQUEST_SYSCALL_INTERCEPT){
+
+			if (table[syscall].intercepted == 1){
+				return EBUSY;
+			}
+
+			spin_lock(&calltable_lock);
+			spin_lock(&pidlist_lock);
+			// replace the default syscall from syscalltable to our interceptor function
+			sys_call_table[syscall] = &interceptor;
+			// change mytable's properties to reflect this change
+			table[syscall].intercepted = 1;
+			spin_unlock(&calltable_lock);
+			spin_unlock(&pidlist_lock);
 
 
-
-
-
-
+		}else if(cmd == REQUEST_SYSCALL_RELEASE){      // else is sufficient, leave it like this for now , fix after-------------------------
+			
+			if (table[syscall].intercepted != 1){
+				return EINVAL;
+			}
+			spin_lock(&calltable_lock);
+			spin_lock(&pidlist_lock);
+			// replace the default syscall from syscalltable to our interceptor function
+			sys_call_table[syscall] = table[syscall].f;
+			// change mytable's properties to reflect this change
+			table[syscall].intercepted = 0;
+			spin_unlock(&calltable_lock);
+			spin_unlock(&pidlist_lock);
+		}
 	}else if (cmd == REQUEST_START_MONITORING || cmd == REQUEST_STOP_MONITORING){
-
+		// writing else if inside does not make it more effentient, since it always return within each "if"
 
 		// the pid must be valid for the last two commands. It cannot be a negative integer, 
 		// and it must be an existing pid (except for the case when it's 0, indicating that we want 
 		// to start/stop monitoring for "all pids"). 
-		if ((pid_task(find_vpid(pid), PIDTYPE_PID) == NULL) && pid != 0){ 
+		if ((pid_task(find_vpid(pid), PIDTYPE_PID) == NULL) && pid != 0) { 
 			return EINVAL;
 		}
 		if (current_uid() != 0){
 			return EPERM;
 		}
+		// --------------------------------general checking ends---------------------------
 
+		if (cmd == REQUEST_START_MONITORING) {
+			// check if it was already being monitored
+			if (check_pid_monitored(sysc, pid) == 1){
+				return EBUSY;
+			}
+			// try add the new pid, if enough memory is available
+			if (add_pid_sysc(pid, sysc) == ENOMEM){
+				return ENOMEM;
+			}
+		}
 
+		else if (cmd == REQUEST_STOP_MONITORING){
+			// check if the system call is intercepted first
+			if (table[syscall].intercepted != 1) {
+				return EINVAL;
+			}
+			// try delete from list of monitored pids if it exists
+			if (del_pid_sysc(pid, sysc) == EINVAL) {
+				return EINVAL;
+			}
 
-
-	}else{
-		printk(KERN_ALERT "fking fail!!!!!!!!!!!!!!!!!!!!!!! \n");// -EINVAL
+		}
 	}
+
 
 
 	return 0;
@@ -462,6 +497,7 @@ static int init_function(void) {
 		table[i].monitored = 0;
 		table[i].listcount = 0;
 		INIT_LIST_HEAD(&(table[i].my_list));
+		// copying the original syscall to table
 		table[i].f = sys_call_table[i];
 	}
 	return 0;
