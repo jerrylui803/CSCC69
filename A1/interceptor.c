@@ -479,7 +479,6 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 			if (pid == 0){
 				destroy_list(syscall);
 			}
-
 			// try delete from list of monitored pids if it exists
 			else if (del_pid_sysc(pid, syscall) == -EINVAL) {
 				spin_unlock(&pidlist_lock);
@@ -518,7 +517,9 @@ long (*orig_custom_syscall)(void);
  */
 static int init_function(void) {
 	// lock before exchanging customSysCall and customExitCall
-	printk( KERN_ALERT "BBBBBBBBBBBBBBBBBBBBBBB\n");
+	spin_lock_init(&calltable_lock);
+	spin_lock_init(&pidlist_lock);
+
 	spin_lock(&calltable_lock);
 
 	orig_custom_syscall = sys_call_table[MY_CUSTOM_SYSCALL];
