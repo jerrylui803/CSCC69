@@ -406,11 +406,14 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 			}
 			spin_lock(&calltable_lock);
 			spin_lock(&pidlist_lock);
-			set_addr_rw((unsigned long)sys_call_table);
 			// replace the default syscall from syscalltable to our interceptor function
+			set_addr_rw((unsigned long)sys_call_table);
 			sys_call_table[syscall] = table[syscall].f;
+			set_addr_ro((unsigned long)sys_call_table);
 			// change mytable's properties to reflect this change
 			table[syscall].intercepted = 0;
+			// destory list when no pid is being monitored
+			destroy_list(syscall);
 			spin_unlock(&calltable_lock);
 			spin_unlock(&pidlist_lock);
 		}
@@ -430,14 +433,29 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 		// --------------------------------general checking ends---------------------------
 
 		if (cmd == REQUEST_START_MONITORING) {
+			// if we should monitor all pid
+			if (pid == 0){
+				spin_lock(&calltable_lock);
+				spin_lock(&pidlist_lock);
+				destroy_list(syscall);
+				table[syscall].monitored = 2;
+				spin_unlock(&calltable_lock);
+				spin_unlock(&pidlist_lock);
+
+			}
 			// check if it was already being monitored
 			if (check_pid_monitored(syscall, pid) == 1){
 				return -EBUSY;
 			}
 			// try add the new pid, if enough memory is available
+	
+			spin_lock(&pidlist_lock);
 			if (add_pid_sysc(pid, syscall) == -ENOMEM){
+				spin_unlock(&pidlist_lock);
 				return -ENOMEM;
 			}
+			// in case it does not go into the if statement
+			spin_unlock(&pidlist_lock);
 		}
 
 		else if (cmd == REQUEST_STOP_MONITORING){
@@ -446,9 +464,12 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 				return -EINVAL;
 			}
 			// try delete from list of monitored pids if it exists
+			spin_lock(&pidlist_lock);
 			if (del_pid_sysc(pid, syscall) == -EINVAL) {
+				spin_unlock(&pidlist_lock);
 				return -EINVAL;
 			}
+			spin_unlock(&pidlist_lock);
 
 		}
 	}
