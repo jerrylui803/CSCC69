@@ -465,7 +465,7 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 
 		else if (cmd == REQUEST_STOP_MONITORING){
 			// check if the system call is intercepted first
-			if (table[syscall].intercepted != 1) {
+			if (table[syscall].intercepted == 0) {
 				return -EINVAL;
 			}
 			// try delete from list of monitored pids if it exists
