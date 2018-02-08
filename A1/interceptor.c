@@ -363,7 +363,6 @@ asmlinkage long interceptor(struct pt_regs reg) {
  */
 asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 
-	printk( KERN_ALERT "test------------     %d      -----     %d ---------  %d  \n", cmd, syscall, pid );
 	// check if the syscall is valid, and is not my_syscall itself (> 0), 
 	// technically the last comparison is not needed, since its just macro for 0
 	if (!(syscall >= 0 && syscall <= NR_syscalls && syscall != MY_CUSTOM_SYSCALL)){
@@ -433,6 +432,12 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 		// --------------------------------general checking ends---------------------------
 
 		if (cmd == REQUEST_START_MONITORING) {
+			//check if the sys call is being monitored or not first
+			if (table[syscall].intercepted == 0){
+				return -EINVAL
+			}
+
+
 			// if we should monitor all pid
 			if (pid == 0){
 				spin_lock(&calltable_lock);
