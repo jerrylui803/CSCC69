@@ -422,6 +422,7 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 		// the pid must be valid for the last two commands. It cannot be a negative integer, 
 		// and it must be an existing pid (except for the case when it's 0, indicating that we want 
 		// to start/stop monitoring for "all pids"). 
+		printk( KERN_ALERT "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n");
 		if ((pid_task(find_vpid(pid), PIDTYPE_PID) == NULL) && pid != 0) { 
 			return -EINVAL;
 		}
@@ -430,7 +431,7 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 			return -EPERM;
 		}
 		// --------------------------------general checking ends---------------------------
-		printk( KERN_ALERT "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n");
+
 		if (cmd == REQUEST_START_MONITORING) {
 			//check if the sys call is being monitored or not first
 			if (table[syscall].intercepted == 0){
