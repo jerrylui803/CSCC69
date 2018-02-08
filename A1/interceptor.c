@@ -295,7 +295,7 @@ void my_exit_group(int status)
  * - Don't forget to call the original system call, so we allow processes to proceed as normal.
  */
 asmlinkage long interceptor(struct pt_regs reg) {
-
+	printk( KERN_ALERT "aAAAAAAAAAAAAAAAA\n");	
 	int this_syscall;
 	// call the original system call
 	this_syscall = table[reg.ax].f(reg);
@@ -519,6 +519,7 @@ long (*orig_custom_syscall)(void);
  */
 static int init_function(void) {
 	// lock before exchanging customSysCall and customExitCall
+	printk( KERN_ALERT "BBBBBBBBBBBBBBBBBBBBBBB\n");
 	spin_lock(&calltable_lock);
 
 	orig_custom_syscall = sys_call_table[MY_CUSTOM_SYSCALL];
