@@ -433,10 +433,10 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 			if (pid == 0){
 				return -EPERM;
 			}
-			if (current->pid != NULL){
-				if(check_pid_from_list(current->pid, pid) != 0 ){
-					return -EPERM;
-				}
+			
+			if(check_pid_from_list(current->pid, pid) != 0 ){
+				return -EPERM;
+				
 			}
 		}
 		// --------------------------------general checking ends---------------------------
