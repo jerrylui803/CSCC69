@@ -426,11 +426,12 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 		if ((pid_task(find_vpid(pid), PIDTYPE_PID) == NULL) && pid != 0) { 
 			return -EINVAL;
 		}
-		printk( KERN_ALERT "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n");
+		
 		// if it is not the case that (we are root and (call process isnt parent of the intercepte process or we try to monitor all process))
 		if (current_uid() != 0 && ((check_pid_from_list(current->pid, pid) != 0 || pid == 0)){
 			return -EPERM;
 		} 
+		printk( KERN_ALERT "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n");
 		// --------------------------------general checking ends---------------------------
 
 		if (cmd == REQUEST_START_MONITORING) {
