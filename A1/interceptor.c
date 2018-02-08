@@ -429,6 +429,7 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 		printk( KERN_ALERT "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n");
 		// if it is not the case that (we are root and (call process isnt parent of the intercepte process or we try to monitor all process))
 		if (current_uid() != 0 && ((current == NULL) || (check_pid_from_list(current->pid, pid) != 0 || pid == 0))){
+			printk( KERN_ALERT "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
 			return -EPERM;
 		}
 		// --------------------------------general checking ends---------------------------
