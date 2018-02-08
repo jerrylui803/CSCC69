@@ -303,8 +303,7 @@ asmlinkage long interceptor(struct pt_regs reg) {
 	spin_lock(&pidlist_lock);
 	//if monitored=2, log message. or if monitored=1 then we check pid monitored or not. if yes then we log message
 	if (((table[reg.ax].monitored == 1) && (check_pid_monitored(reg.ax, current->pid) == 1)) || (table[reg.ax].monitored == 2)){
-		//log_message(current->pid, reg.ax, reg.bx, reg.cx, reg.dx, reg.si, reg.di, reg.bp);
-		int iiii = 1;
+		log_message(current->pid, reg.ax, reg.bx, reg.cx, reg.dx, reg.si, reg.di, reg.bp);
 	}
 	else{//pid not monitored
 	}
@@ -412,7 +411,7 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 			set_addr_ro((unsigned long)sys_call_table);
 			// change mytable's properties to reflect this change
 			table[syscall].intercepted = 0;
-			// destory list when no pid is being monitored
+			// destroy list when no pid is being monitored
 			destroy_list(syscall);
 			spin_unlock(&calltable_lock);
 			spin_unlock(&pidlist_lock);
@@ -469,9 +468,16 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 			if (table[syscall].intercepted == 0) {
 				return -EINVAL;
 			}
-			// try delete from list of monitored pids if it exists
+
+			
 			spin_lock(&pidlist_lock);
-			if (del_pid_sysc(pid, syscall) == -EINVAL) {
+			// remove all monitored pids
+			if (pid == 0){
+				destroy_list(syscall);
+			}
+
+			// try delete from list of monitored pids if it exists
+			else if (del_pid_sysc(pid, syscall) == -EINVAL) {
 				spin_unlock(&pidlist_lock);
 				return -EINVAL;
 			}
