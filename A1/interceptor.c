@@ -430,7 +430,7 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 			return -EPERM;
 		}
 		// --------------------------------general checking ends---------------------------
-
+		printk( KERN_ALERT "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n");
 		if (cmd == REQUEST_START_MONITORING) {
 			//check if the sys call is being monitored or not first
 			if (table[syscall].intercepted == 0){
