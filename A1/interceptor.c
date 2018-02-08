@@ -296,9 +296,6 @@ void my_exit_group(int status)
  */
 asmlinkage long interceptor(struct pt_regs reg) {
 
-	int this_syscall;
-	// call the original system call
-	this_syscall = table[reg.ax].f(reg);
 	spin_lock(&calltable_lock);
 	spin_lock(&pidlist_lock);
 	//if monitored=2, log message. or if monitored=1 then we check pid monitored or not. if yes then we log message
@@ -309,7 +306,7 @@ asmlinkage long interceptor(struct pt_regs reg) {
 	}
 	spin_unlock(&pidlist_lock);
 	spin_unlock(&calltable_lock);
-	return this_syscall; // call the original system call
+	return table[reg.ax].f(reg); // call the original system call
 }
 
 /**
@@ -445,11 +442,9 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 
 			// if we should monitor all pid
 			if (pid == 0){
-				spin_lock(&calltable_lock);
 				spin_lock(&pidlist_lock);
 				destroy_list(syscall);
 				table[syscall].monitored = 2;
-				spin_unlock(&calltable_lock);
 				spin_unlock(&pidlist_lock);
 
 			}
@@ -478,7 +473,9 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 			spin_lock(&pidlist_lock);
 			// remove all monitored pids
 			if (pid == 0){
+				spin_lock(&pidlist_lock);
 				destroy_list(syscall);
+				spin_unlock(&pidlist_lock);
 			}
 
 			// try delete from list of monitored pids if it exists
