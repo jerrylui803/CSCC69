@@ -435,7 +435,7 @@ asmlinkage long my_syscall(int cmd, int syscall, int pid) {
 		if (cmd == REQUEST_START_MONITORING) {
 			//check if the sys call is being monitored or not first
 			if (table[syscall].intercepted == 0){
-				return -EINVAL
+				return -EINVAL;
 			}
 
 
