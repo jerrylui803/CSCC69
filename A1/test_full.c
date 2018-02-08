@@ -171,6 +171,7 @@ void test_syscall(int syscall) {
 	//clear_log();
 	do_intercept(syscall, 0);
 	do_intercept(syscall, -EBUSY);
+	/*
 	do_as_guest("./test_full nonroot %d", syscall, 0);
 	do_start(syscall, -2, -EINVAL);
 	do_start(syscall, 0, 0);
@@ -179,6 +180,7 @@ void test_syscall(int syscall) {
 	do_as_guest("./test_full stop %d 1 %d", syscall, -EPERM);
 	do_stop(syscall, 1, 0);
 	do_as_guest("./test_full start %d -1 %d", syscall, 0);
+	*/
 	do_stop(syscall, last_child, -EINVAL);
 	do_release(syscall, 0);
 }
