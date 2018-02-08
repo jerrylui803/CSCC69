@@ -517,14 +517,15 @@ long (*orig_custom_syscall)(void);
  */
 static int init_function(void) {
 	// lock before exchanging customSysCall and customExitCall
-	spin_lock_init(&calltable_lock);
-	spin_lock_init(&pidlist_lock);
 
-	spin_lock(&calltable_lock);
+
+	
 
 	orig_custom_syscall = sys_call_table[MY_CUSTOM_SYSCALL];
 	orig_exit_group = sys_call_table[__NR_exit_group];
-
+		spin_lock_init(&calltable_lock);
+	spin_lock_init(&pidlist_lock);
+	spin_lock(&calltable_lock);
 	// change premission to hijack
 	set_addr_rw((unsigned long)sys_call_table);
 	sys_call_table[MY_CUSTOM_SYSCALL] = &my_syscall;
