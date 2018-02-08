@@ -185,6 +185,14 @@ void test_syscall(int syscall) {
 
 
 int main(int argc, char **argv) {
+printf ("test           aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa      \n");
+printf ("test           aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa      \n");
+printf ("test           aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa      \n");
+printf ("test           aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa      \n");
+printf ("test           aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa      \n");
+printf ("test           aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa      \n");
+printf ("test           aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa      \n");
+printf ("test           aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa      \n");
 
 	srand(time(NULL));
 
@@ -215,7 +223,6 @@ int main(int argc, char **argv) {
 	do_intercept(__NR_exit, 0);
 	do_release(__NR_exit, 0);
 	printf ("test           aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa      \n");
-	flushf(stdout);
 	test_syscall(SYS_open);
 	/* The above line of code tests SYS_open.
 	   Feel free to add more tests here for other system calls, 
