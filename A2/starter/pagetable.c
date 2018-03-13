@@ -35,12 +35,35 @@ int allocate_frame(pgtbl_entry_t *p) {
 	if(frame == -1) { // Didn't find a free page.
 		// Call replacement algorithm's evict function to select victim
 		frame = evict_fcn();
-
+        
 		// All frames were in use, so victim frame must hold some page
 		// Write victim page to swap, if needed, and update pagetable
 		// IMPLEMENTATION NEEDED
+        pgtbl_entry_t *victim = coremap[frame].pte;
+        
+        // Write victim page to swap
+        int swapfile_offset = swap_pageout(frame, victim->swap_off);
 
-
+        //  check if the data was written on success
+        if(swapfile_offset == INVALID_SWAP) {
+        	perror("INVALID_SWAP");
+        } else {
+        	// save the offset 
+            victim->swap_off = swapfile_offset;
+            // Set flag to 'page has been evicted to swap file'
+            victim->frame = victim->frame | PG_ONSWAP;
+            victim->frame = victim->frame & (~PG_VALID);
+        }
+        
+        // Check if Dirty and increase counter.
+        // Bitwise and will only be true if the PG_DIRTY bit is true
+        // This also relies on the fact that if(anyvalue != 0) is true
+        if(victim->frame & PG_DIRTY) {
+            evict_dirty_count ++;
+        } else { 
+        	// if it is not dirty then its clean
+            evict_clean_count ++;
+        }
 	}
 
 	// Record information for virtual page that will now be stored in frame
@@ -65,6 +88,7 @@ void init_pagetable() {
 	// Set all entries in top-level pagetable to 0, which ensures valid
 	// bits are all 0 initially.
 	for (i=0; i < PTRS_PER_PGDIR; i++) {
+		// note that there is nothing in each index (only 0)
 		pgdir[i].pde = 0;
 	}
 }
@@ -132,25 +156,65 @@ void init_frame(int frame, addr_t vaddr) {
  */
 char *find_physpage(addr_t vaddr, char type) {
 	pgtbl_entry_t *p=NULL; // pointer to the full page table entry for vaddr
-	unsigned idx = PGDIR_INDEX(vaddr); // get index into page directory
+	int idx = PGDIR_INDEX(vaddr); // get index into page directory
 
 	// IMPLEMENTATION NEEDED
 	// Use top-level page directory to get pointer to 2nd-level page table
-	(void)idx; // To keep compiler happy - remove when you have a real use.
+	//(void)idx; // To keep compiler happy - remove when you have a real use.
 
 
 	// Use vaddr to get index into 2nd-level page table and initialize 'p'
 
 
+	// Get pointer to the correct page table
+	uintptr_t pgtbl_p =  (pgdir[idx]).pde;
+	
+	if ((pgtbl_p & PG_VALID) == 0){ // if (pgtbl_p == 0){
+		pgdir[idx] = init_second_level();
+		pgtbl_p = pgdir[idx].pde;
+	}
 
+	unsigned itx = PGTBL_INDEX(vaddr); // get index into page table
+
+	// Get correct entry from the page table
+	
+	p = (pgtbl_entry_t*) (pgtbl_p & PAGE_MASK) + itx;
 	// Check if p is valid or not, on swap or not, and handle appropriately
 
+	// if p is valid 
+	if ((p->frame & PG_VALID) && !(p->frame & PG_ONSWAP)) {
+			hit_count = hit_count + 1;	
+	} else {
+		miss_count = miss_count + 1;
+		// if p is in the swap file
+	 	if (!(p->frame & PG_VALID) && (p->frame & PG_ONSWAP)){
+			// allocate a frame to load the data from swap file into memory
+			int frame = allocate_frame(p);
+			swap_pagein(frame, p->swap_off);
+			p->frame = frame << PAGE_SHIFT;
+		} 
+		else if (!(p->frame & PG_VALID) && !(p->frame & PG_ONSWAP)) {
+			// allocate a frame to store then store the new content
+			int frame = allocate_frame(p);
+			init_frame(frame, vaddr);
+			p->frame = frame << PAGE_SHIFT;
+			p->frame = p->frame | PG_DIRTY;
 
+		} else {
+			perror("Something went wrong in find_physpage\n");
+		}
+	}
 
 	// Make sure that p is marked valid and referenced. Also mark it
 	// dirty if the access type indicates that the page will be written to.
-
-
+	
+	p->frame = p->frame | PG_VALID;
+	p->frame = p->frame | PG_REF;
+	p->frame = p->frame & ~(PG_ONSWAP);
+	ref_count = ref_count + 1;
+	if (type == 'M' || type == 'S'){
+		p->frame = p->frame | PG_DIRTY;
+	}
 
 	// Call replacement algorithm's ref_fcn for this page
 	ref_fcn(p);
@@ -158,6 +222,7 @@ char *find_physpage(addr_t vaddr, char type) {
 	// Return pointer into (simulated) physical memory at start of frame
 	return  &physmem[(p->frame >> PAGE_SHIFT)*SIMPAGESIZE];
 }
+
 
 void print_pagetbl(pgtbl_entry_t *pgtbl) {
 	int i;

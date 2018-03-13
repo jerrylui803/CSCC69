@@ -17,9 +17,25 @@ extern struct frame *coremap;
  * for the page that is to be evicted.
  */
 
+int hand;
+
 int clock_evict() {
-	
-	return 0;
+	// keep running the clock, check PG_REF each time
+    // if it's 0, then set to 1 and return hand
+    while(1){
+        // if ref number is 1,then set to 0.
+        if(coremap[hand].pte->frame & PG_REF) {
+            // set the reference bit to 0
+            coremap[hand].pte->frame = coremap[hand].pte -> frame & ~PG_REF;
+            hand ++;
+            hand = hand % memsize;
+        }
+        // If it's 0, then set to 1 and return the hand.
+        else {
+            coremap[hand].pte->frame = coremap[hand].pte -> frame | PG_REF;
+            return hand;
+        }
+    }
 }
 
 /* This function is called on each access to a page to update any information
@@ -27,7 +43,6 @@ int clock_evict() {
  * Input: The page table entry for the page that is being accessed.
  */
 void clock_ref(pgtbl_entry_t *p) {
-
 	return;
 }
 
@@ -35,4 +50,5 @@ void clock_ref(pgtbl_entry_t *p) {
  * algorithm. 
  */
 void clock_init() {
+	hand = 0;
 }
